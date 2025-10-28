@@ -1,0 +1,59 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  gap: 20px;
+}
+
+.login-card {
+  max-width: 400px;
+  width: 100%;
+  padding: 20px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.button-container {
+  margin-top: 16px;
+}
+
+.demo-credentials {
+  max-width: 300px;
+  width: 100%;
+}
+
+.demo-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+}
+
+.demo-card mat-card-content {
+  font-size: 14px;
+}
+
+.demo-card p {
+  margin: 8px 0;
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+    padding: 10px;
+  }
+  
+  .demo-credentials {
+    max-width: 400px;
+  }
+}
+

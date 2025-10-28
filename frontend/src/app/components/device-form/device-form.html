@@ -1,0 +1,115 @@
+<div class="device-form-container">
+  <!-- Toolbar -->
+  <mat-toolbar color="primary" class="toolbar">
+    <button mat-icon-button (click)="cancel()" matTooltip="Voltar">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <span>{{ isEditMode ? 'Editar Dispositivo' : 'Novo Dispositivo' }}</span>
+    <span class="spacer"></span>
+    <span class="user-info">{{ currentUser?.name }}</span>
+    <button mat-icon-button (click)="logout()" matTooltip="Logout">
+      <mat-icon>logout</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <!-- Formulário -->
+  <div class="form-container">
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>
+          {{ isEditMode ? 'Editar Dispositivo' : 'Criar Novo Dispositivo' }}
+        </mat-card-title>
+        <mat-card-subtitle>
+          {{ isEditMode ? 'Atualize as informações do dispositivo' : 'Preencha os dados do novo dispositivo' }}
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form [formGroup]="deviceForm" (ngSubmit)="onSubmit()" class="device-form">
+          <!-- Nome -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nome do Dispositivo</mat-label>
+            <input matInput 
+                   formControlName="name" 
+                   placeholder="Ex: iPhone 13 Pro"
+                   [class.mat-form-field-invalid]="isFieldInvalid('name')">
+            <mat-error *ngIf="isFieldInvalid('name')">
+              {{ getFieldError('name') }}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Localização -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Localização</mat-label>
+            <input matInput 
+                   formControlName="location" 
+                   placeholder="Ex: Escritório Central, Sala de Reuniões"
+                   [class.mat-form-field-invalid]="isFieldInvalid('location')">
+            <mat-error *ngIf="isFieldInvalid('location')">
+              {{ getFieldError('location') }}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Data de Compra -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Data de Compra</mat-label>
+            <input matInput 
+                   type="date" 
+                   formControlName="purchase_date"
+                   [class.mat-form-field-invalid]="isFieldInvalid('purchase_date')">
+            <mat-error *ngIf="isFieldInvalid('purchase_date')">
+              {{ getFieldError('purchase_date') }}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Botões de Ação -->
+          <div class="form-actions">
+            <button mat-button type="button" (click)="cancel()" [disabled]="isLoading">
+              Cancelar
+            </button>
+            <button mat-raised-button 
+                    color="primary" 
+                    type="submit" 
+                    [disabled]="deviceForm.invalid || isLoading"
+                    class="submit-button">
+              <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
+              <span *ngIf="!isLoading">
+                {{ isEditMode ? 'Atualizar' : 'Criar' }}
+              </span>
+              <span *ngIf="isLoading">
+                {{ isEditMode ? 'Atualizando...' : 'Criando...' }}
+              </span>
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Informações Adicionais -->
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-card-title>Informações Importantes</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <ul class="info-list">
+          <li>
+            <mat-icon>info</mat-icon>
+            <span>O nome do dispositivo deve ser único e descritivo</span>
+          </li>
+          <li>
+            <mat-icon>location_on</mat-icon>
+            <span>A localização ajuda a identificar onde o dispositivo está fisicamente</span>
+          </li>
+          <li>
+            <mat-icon>event</mat-icon>
+            <span>A data de compra não pode ser futura</span>
+          </li>
+          <li>
+            <mat-icon>check_circle</mat-icon>
+            <span>Após criar, você poderá marcar o dispositivo como "em uso"</span>
+          </li>
+        </ul>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

@@ -1,0 +1,156 @@
+.device-list-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.toolbar {
+  margin-bottom: 20px;
+  border-radius: 8px;
+  
+  .spacer {
+    flex: 1 1 auto;
+  }
+  
+  .user-info {
+    margin-right: 16px;
+    font-size: 14px;
+  }
+}
+
+.filters-card {
+  margin-bottom: 20px;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+.filter-field {
+  width: 100%;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.actions-bar {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.table-card {
+  margin-bottom: 20px;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.devices-table {
+  width: 100%;
+  
+  th {
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.87);
+  }
+  
+  td {
+    padding: 12px 8px;
+  }
+  
+  .mat-column-actions {
+    width: 120px;
+    text-align: center;
+  }
+  
+  .mat-column-name {
+    min-width: 150px;
+  }
+  
+  .mat-column-location {
+    min-width: 150px;
+  }
+  
+  .mat-column-purchase_date {
+    min-width: 120px;
+  }
+  
+  .mat-column-in_use {
+    min-width: 100px;
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  
+  p {
+    margin-top: 16px;
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  
+  .empty-icon {
+    font-size: 64px;
+    height: 64px;
+    width: 64px;
+    color: rgba(0, 0, 0, 0.3);
+    margin-bottom: 16px;
+  }
+  
+  h3 {
+    margin: 0 0 8px 0;
+    color: rgba(0, 0, 0, 0.6);
+  }
+  
+  p {
+    margin: 0 0 24px 0;
+    color: rgba(0, 0, 0, 0.5);
+    max-width: 400px;
+  }
+}
+
+mat-paginator {
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .device-list-container {
+    padding: 10px;
+  }
+  
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .devices-table {
+    font-size: 14px;
+    
+    .mat-column-actions {
+      width: 100px;
+    }
+  }
+  
+  .actions-bar {
+    justify-content: center;
+  }
+}
+

@@ -1,0 +1,161 @@
+<div class="device-list-container">
+  <!-- Toolbar -->
+  <mat-toolbar color="primary" class="toolbar">
+    <span>Gerenciamento de Dispositivos</span>
+    <span class="spacer"></span>
+    <span class="user-info">{{ currentUser?.name }}</span>
+    <button mat-icon-button (click)="logout()" matTooltip="Logout">
+      <mat-icon>logout</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <!-- Filtros -->
+  <mat-card class="filters-card">
+    <mat-card-header>
+      <mat-card-title>Filtros</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="filters-grid">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Localização</mat-label>
+          <input matInput [formControl]="locationFilter" placeholder="Digite a localização">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Status</mat-label>
+          <mat-select [formControl]="statusFilter">
+            <mat-option value="">Todos</mat-option>
+            <mat-option value="true">Em Uso</mat-option>
+            <mat-option value="false">Disponível</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Data de Compra (De)</mat-label>
+          <input matInput [matDatepicker]="pickerFrom" [formControl]="dateFromFilter">
+          <mat-datepicker-toggle matSuffix [for]="pickerFrom"></mat-datepicker-toggle>
+          <mat-datepicker #pickerFrom></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Data de Compra (Até)</mat-label>
+          <input matInput [matDatepicker]="pickerTo" [formControl]="dateToFilter">
+          <mat-datepicker-toggle matSuffix [for]="pickerTo"></mat-datepicker-toggle>
+          <mat-datepicker #pickerTo></mat-datepicker>
+        </mat-form-field>
+
+        <div class="filter-actions">
+          <button mat-raised-button color="accent" (click)="clearFilters()">
+            <mat-icon>clear</mat-icon>
+            Limpar Filtros
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Ações -->
+  <div class="actions-bar">
+    <button mat-raised-button color="primary" (click)="addDevice()">
+      <mat-icon>add</mat-icon>
+      Novo Dispositivo
+    </button>
+  </div>
+
+  <!-- Tabela de Dispositivos -->
+  <mat-card class="table-card">
+    <mat-card-content>
+      <div class="table-container" *ngIf="!isLoading; else loadingTemplate">
+        <table mat-table [dataSource]="devices" class="devices-table">
+          <!-- Nome -->
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Nome</th>
+            <td mat-cell *matCellDef="let device">{{ device.name }}</td>
+          </ng-container>
+
+          <!-- Localização -->
+          <ng-container matColumnDef="location">
+            <th mat-header-cell *matHeaderCellDef>Localização</th>
+            <td mat-cell *matCellDef="let device">{{ device.location }}</td>
+          </ng-container>
+
+          <!-- Data de Compra -->
+          <ng-container matColumnDef="purchase_date">
+            <th mat-header-cell *matHeaderCellDef>Data de Compra</th>
+            <td mat-cell *matCellDef="let device">
+              {{ device.purchase_date | date:'dd/MM/yyyy' }}
+            </td>
+          </ng-container>
+
+          <!-- Status -->
+          <ng-container matColumnDef="in_use">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let device">
+              <mat-chip [color]="getStatusChipColor(device.in_use)" selected>
+                {{ getStatusText(device.in_use) }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Ações -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Ações</th>
+            <td mat-cell *matCellDef="let device">
+              <button mat-icon-button 
+                      [color]="device.in_use ? 'warn' : 'primary'"
+                      (click)="toggleDeviceUse(device)"
+                      matTooltip="{{ device.in_use ? 'Marcar como disponível' : 'Marcar como em uso' }}">
+                <mat-icon>{{ device.in_use ? 'pause' : 'play_arrow' }}</mat-icon>
+              </button>
+              
+              <button mat-icon-button color="accent" 
+                      (click)="editDevice(device)"
+                      matTooltip="Editar">
+                <mat-icon>edit</mat-icon>
+              </button>
+              
+              <button mat-icon-button color="warn" 
+                      (click)="deleteDevice(device)"
+                      matTooltip="Excluir">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+
+        <!-- Paginação -->
+        <mat-paginator 
+          *ngIf="paginatedResponse"
+          [length]="paginatedResponse.total"
+          [pageSize]="paginatedResponse.per_page"
+          [pageIndex]="paginatedResponse.current_page - 1"
+          [pageSizeOptions]="[5, 10, 25, 50]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons>
+        </mat-paginator>
+      </div>
+
+      <!-- Loading Template -->
+      <ng-template #loadingTemplate>
+        <div class="loading-container">
+          <mat-spinner diameter="50"></mat-spinner>
+          <p>Carregando dispositivos...</p>
+        </div>
+      </ng-template>
+
+      <!-- Empty State -->
+      <div *ngIf="!isLoading && devices.length === 0" class="empty-state">
+        <mat-icon class="empty-icon">devices_other</mat-icon>
+        <h3>Nenhum dispositivo encontrado</h3>
+        <p>Adicione um novo dispositivo ou ajuste os filtros para ver mais resultados.</p>
+        <button mat-raised-button color="primary" (click)="addDevice()">
+          <mat-icon>add</mat-icon>
+          Adicionar Dispositivo
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
