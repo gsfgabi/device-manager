@@ -1,6 +1,8 @@
 # Device Manager
 
-**Sistema de Gerenciamento de Dispositivos Celulares**
+[![Tests](https://github.com/gsfgabi/device-manager/actions/workflows/tests.yml/badge.svg)](https://github.com/gsfgabi/device-manager/actions/workflows/tests.yml)
+
+Inventário de celulares corporativos: cada usuário autentica com Sanctum e só enxerga os próprios aparelhos. Backend Laravel 12 + API REST, frontend Angular.
 
 ---
 
@@ -40,7 +42,7 @@ Agora, cada funcionário tem sua própria conta, registra seus dispositivos e po
 ### Fluxo Principal
 
 **1. Autenticação**
-O usuário faz login com email e senha. O sistema verifica as credenciais e retorna um token de acesso (JWT), que funciona como uma "chave temporária" para acessar as funcionalidades.
+O usuário faz login com email e senha. O Sanctum devolve um token Bearer, que o Angular envia nas próximas chamadas.
 
 **2. Gerenciamento de Dispositivos**
 Após autenticado, o usuário pode:
@@ -145,18 +147,19 @@ device-manager/
         └── models/             # Interfaces TypeScript
 ```
 
-### Por que Query Builder em vez de Eloquent?
+### Por que Eloquent e Policy?
 
-No código, usamos `DB::table()` em vez do Eloquent ORM porque:
-- Controle total sobre as queries SQL
-- Performance melhor para operações simples
-- Não adiciona overhead desnecessário
-- Query direta é mais clara para casos específicos
+O controller usa o model `Device` (com `SoftDeletes`) em vez de `DB::table()`. Soft delete, relacionamento `user()` e factory ficam no model; o isolamento de dono não se espalha em `where('user_id', Auth::id())` em cada método.
 
-Exemplo:
+A `DevicePolicy` responde view/update/delete. Quem tenta mexer no aparelho de outra pessoa recebe **403**, não um 404 disfarçado. Isso deixa a regra de autorização testável e visível no código, o que um Query Builder cru não entrega.
+
 ```php
-// Em vez de: Device::where('user_id', $userId)->get()
-// Usamos: DB::table('devices')->where('user_id', $userId)->get()
+public function show(Device $device): JsonResponse
+{
+    $this->authorize('view', $device);
+
+    return response()->json($device);
+}
 ```
 
 ---
@@ -174,7 +177,7 @@ Exemplo:
 
 **1. Clone o repositório**
 ```bash
-git clone <url-do-repositorio>
+git clone https://github.com/gsfgabi/device-manager.git
 cd device-manager
 ```
 
@@ -212,9 +215,9 @@ npm start                   # http://localhost:4200
 
 Abra `http://localhost:4200` no navegador.
 
-Login padrão:
-- Email: admin@example.com
-- Senha: password
+Login padrão (seeder):
+- Email: `admin@example.com.br`
+- Senha: `12345678`
 
 ---
 
@@ -392,26 +395,20 @@ E aplica o middleware `auth:sanctum` (precisa estar autenticado).
 ```php
 public function index(Request $request): JsonResponse
 {
-    $userId = Auth::id();  // Pega o ID do usuário autenticado
-    
-    // Constrói query manualmente
-    $query = DB::table('devices')
-        ->where('user_id', $userId)      // Só dispositivos deste usuário
-        ->whereNull('deleted_at');       // Exceto os deletados
-    
-    // Aplica filtros se existirem
+    $this->authorize('viewAny', Device::class);
+
+    $query = Device::query()->where('user_id', $request->user()->id);
+
     if ($request->has('in_use')) {
         $query->where('in_use', $request->boolean('in_use'));
     }
-    
-    // Pagina e retorna
-    $devices = $query->paginate(15);
-    return response()->json($devices);
+
+    return response()->json($query->latest()->paginate(15));
 }
 ```
 
-**Por que usar `Auth::id()`?**
-O token Bearer que o frontend envia contém informações do usuário. O Sanctum decodifica automaticamente e disponibiliza via `Auth::`. Assim garantimos que cada usuário só veja seus próprios dados.
+**Por que `authorize()`?**
+A Policy garante que o token Sanctum só opera no dispositivo do dono. SoftDeletes esconde os excluídos sem `whereNull('deleted_at')` em cada query.
 
 **3. Validação** (`StoreDeviceRequest.php`)
 ```php
@@ -429,21 +426,16 @@ Antes de executar o controller, o Laravel valida automaticamente os dados. Se fa
 
 **4. Soft Delete**
 ```php
-public function destroy(string $id): JsonResponse
+public function destroy(Device $device): JsonResponse
 {
-    // Não usa DELETE, usa UPDATE
-    DB::table('devices')
-        ->where('id', $id)
-        ->update([
-            'deleted_at' => now(),  // Marca como deletado
-            'updated_at' => now()
-        ]);
-    
+    $this->authorize('delete', $device);
+    $device->delete();
+
     return response()->json(['message' => 'Dispositivo excluído com sucesso']);
 }
 ```
 
-Quando buscamos dispositivos, sempre adicionamos `->whereNull('deleted_at')`, então os deletados não aparecem.
+O `SoftDeletes` no model marca `deleted_at`. Soft-deleted não entram no `Device::query()` padrão.
 
 ### Frontend: Como os Componentes Funcionam
 
@@ -595,7 +587,9 @@ public function test_can_create_device(): void
 - Testa validações
 - Testa isolamento por usuário
 
-Execute: `php artisan test`
+Execute: `cd backend && php artisan test`
+
+O workflow [Tests](https://github.com/gsfgabi/device-manager/actions/workflows/tests.yml) roda essa suíte no PHP 8.3 a cada push/PR, incluindo 403 quando o dispositivo é de outro usuário.
 
 ### Frontend (Jasmine/Karma)
 

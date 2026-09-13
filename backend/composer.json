@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "gsfgabi/device-manager",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "API Laravel para inventário de dispositivos móveis com Sanctum, Eloquent e policies por dono.",
+    "keywords": ["laravel", "sanctum", "php", "devices", "api"],
     "license": "MIT",
     "require": {
         "php": "^8.2",

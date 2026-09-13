@@ -35,6 +35,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rotas dos dispositivos
     Route::apiResource('devices', DeviceController::class);
-    Route::patch('devices/{id}/use', [DeviceController::class, 'toggleUse']);
+    Route::patch('devices/{device}/use', [DeviceController::class, 'toggleUse']);
 });
 

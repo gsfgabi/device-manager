@@ -6,10 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDeviceRequest;
 use App\Http\Requests\UpdateDeviceRequest;
 use App\Models\Device;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
@@ -73,36 +71,29 @@ class DeviceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $userId = Auth::id();
-        $perPage = $request->get('per_page', 15);
-        
-        $query = DB::table('devices')
-            ->where('user_id', $userId)
-            ->whereNull('deleted_at');
+        $this->authorize('viewAny', Device::class);
 
-        // Filtros
+        $query = Device::query()->where('user_id', $request->user()->id);
+
         if ($request->has('in_use')) {
             $query->where('in_use', $request->boolean('in_use'));
         }
 
-        if ($request->has('location')) {
-            $query->where('location', 'like', '%' . $request->get('location') . '%');
+        if ($request->filled('location')) {
+            $query->where('location', 'like', '%'.$request->get('location').'%');
         }
 
-        if ($request->has('purchase_date_from')) {
-            $query->where('purchase_date', '>=', $request->get('purchase_date_from'));
+        if ($request->filled('purchase_date_from')) {
+            $query->whereDate('purchase_date', '>=', $request->get('purchase_date_from'));
         }
 
-        if ($request->has('purchase_date_to')) {
-            $query->where('purchase_date', '<=', $request->get('purchase_date_to'));
+        if ($request->filled('purchase_date_to')) {
+            $query->whereDate('purchase_date', '<=', $request->get('purchase_date_to'));
         }
 
-        // Ordenação
-        $query->orderBy('created_at', 'desc');
-
-        $devices = $query->paginate($perPage);
-
-        return response()->json($devices);
+        return response()->json(
+            $query->latest()->paginate($request->integer('per_page', 15))
+        );
     }
 
     /**
@@ -129,17 +120,14 @@ class DeviceController extends Controller
      */
     public function store(StoreDeviceRequest $request): JsonResponse
     {
-        $deviceId = DB::table('devices')->insertGetId([
-            'name' => $request->name,
-            'location' => $request->location,
-            'purchase_date' => $request->purchase_date,
-            'in_use' => false,
-            'user_id' => Auth::id(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $this->authorize('create', Device::class);
 
-        $device = DB::table('devices')->where('id', $deviceId)->first();
+        $device = $request->user()->devices()->create([
+            'name' => $request->validated('name'),
+            'location' => $request->validated('location'),
+            'purchase_date' => $request->validated('purchase_date'),
+            'in_use' => false,
+        ]);
 
         return response()->json($device, 201);
     }
@@ -168,17 +156,9 @@ class DeviceController extends Controller
      *     )
      * )
      */
-    public function show(string $id): JsonResponse
+    public function show(Device $device): JsonResponse
     {
-        $device = DB::table('devices')
-            ->where('id', $id)
-            ->where('user_id', Auth::id())
-            ->whereNull('deleted_at')
-            ->first();
-
-        if (!$device) {
-            return response()->json(['message' => 'Dispositivo não encontrado'], 404);
-        }
+        $this->authorize('view', $device);
 
         return response()->json($device);
     }
@@ -215,28 +195,13 @@ class DeviceController extends Controller
      *     )
      * )
      */
-    public function update(UpdateDeviceRequest $request, string $id): JsonResponse
+    public function update(UpdateDeviceRequest $request, Device $device): JsonResponse
     {
-        $device = DB::table('devices')
-            ->where('id', $id)
-            ->where('user_id', Auth::id())
-            ->whereNull('deleted_at')
-            ->first();
+        $this->authorize('update', $device);
 
-        if (!$device) {
-            return response()->json(['message' => 'Dispositivo não encontrado'], 404);
-        }
+        $device->update($request->validated());
 
-        $updateData = array_filter($request->validated());
-        $updateData['updated_at'] = now();
-
-        DB::table('devices')
-            ->where('id', $id)
-            ->update($updateData);
-
-        $updatedDevice = DB::table('devices')->where('id', $id)->first();
-
-        return response()->json($updatedDevice);
+        return response()->json($device);
     }
 
     /**
@@ -262,24 +227,11 @@ class DeviceController extends Controller
      *     )
      * )
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Device $device): JsonResponse
     {
-        $device = DB::table('devices')
-            ->where('id', $id)
-            ->where('user_id', Auth::id())
-            ->whereNull('deleted_at')
-            ->first();
+        $this->authorize('delete', $device);
 
-        if (!$device) {
-            return response()->json(['message' => 'Dispositivo não encontrado'], 404);
-        }
-
-        DB::table('devices')
-            ->where('id', $id)
-            ->update([
-                'deleted_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $device->delete();
 
         return response()->json(['message' => 'Dispositivo excluído com sucesso']);
     }
@@ -308,29 +260,12 @@ class DeviceController extends Controller
      *     )
      * )
      */
-    public function toggleUse(string $id): JsonResponse
+    public function toggleUse(Device $device): JsonResponse
     {
-        $device = DB::table('devices')
-            ->where('id', $id)
-            ->where('user_id', Auth::id())
-            ->whereNull('deleted_at')
-            ->first();
+        $this->authorize('update', $device);
 
-        if (!$device) {
-            return response()->json(['message' => 'Dispositivo não encontrado'], 404);
-        }
+        $device->update(['in_use' => ! $device->in_use]);
 
-        $newStatus = !$device->in_use;
-
-        DB::table('devices')
-            ->where('id', $id)
-            ->update([
-                'in_use' => $newStatus,
-                'updated_at' => now(),
-            ]);
-
-        $updatedDevice = DB::table('devices')->where('id', $id)->first();
-
-        return response()->json($updatedDevice);
+        return response()->json($device->fresh());
     }
 }
